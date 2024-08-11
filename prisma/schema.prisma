@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,4 +5,285 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum TaskStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum RewardStatus {
+  PENDING
+  REDEEMED
+}
+
+enum ReferralStatus {
+  PENDING
+  COMPLETED
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+model Users {
+  id           String   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fullname     String   @map("fullname")
+  username     String?  @unique @map("username")
+  email        String   @unique @map("email")
+  password     String   @map("password")
+  referralCode String   @unique @map("referralCode")
+  coins        Int      @default(0) @map("coins")
+  currentLevel Int      @default(1) @map("currentLevel")
+  xpPoints     Int      @default(0) @map("xpPoints")
+  isAdmin      Boolean  @default(false) @map("isAdmin")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  userTask                 UserTasks[]
+  userRewards              UserRewards[]
+  referralTrackingReferral ReferralTrackings[] @relation("ReferralUser")
+  referralTrackingReferred ReferralTrackings[] @relation("ReferredUser")
+  tap                      Taps[]
+  taskVerification         TaskVerifications[]
+
+  @@id([id])
+  @@map("users")
+}
+
+model Tasks {
+  id          String   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String   @map("title")
+  description String   @map("description")
+  rewardCoins Int      @map("reward_coins")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userTask        UserTasks[]
+  quizTask        QuizTasks?
+  testTask        TestTasks?
+  readingTask     ReadingTasks?
+  referralTask    ReferralTasks?
+  vdeoTask        VideoTasks?
+  socialShareTask SocialShareTasks?
+  spinTask        SpinTasks?
+  trueFalseTask   TrueFalseTasks?
+
+  taskVerification TaskVerifications[]
+
+  @@id([id])
+  @@map("tasks")
+}
+
+model Taps {
+  id          String   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  tapLength   Int      @map("tap_length")
+  fingerCount Int      @map("finger_count")
+  earnedCoins Int      @map("earned_coins")
+  level       Int      @map("level")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user Users @relation(fields: [userId], references: [id])
+
+  @@id([id])
+  @@map("taps")
+}
+
+model UserTasks {
+  id             String     @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String     @map("user_id") @db.Uuid
+  taskId         String     @map("task_id") @db.Uuid
+  status         TaskStatus @map("status")
+  completionDate DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  user Users @relation(fields: [userId], references: [id])
+  task Tasks @relation(fields: [taskId], references: [id])
+
+  @@id([id])
+  @@map("user_tasks")
+}
+
+model QuizTasks {
+  id             String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId         String @unique @map("task_id") @db.Uuid
+  questions      Json   @map("questions")
+  correctAnswers Json   @map("correct_answers")
+  timeLimit      Int    @map("time_limit")
+
+  task Tasks @relation(fields: [taskId], references: [id])
+
+  @@id([id]) // Unique constraint on taskId
+  @@map("quiz_tasks")
+}
+
+model TestTasks {
+  id             String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId         String @unique @db.Uuid
+  questions      Json   @map("questions")
+  correctAnswers Json   @map("correct_answers")
+  timeLimit      Int    @map("time_limit")
+
+  task Tasks @relation(fields: [taskId], references: [id])
+
+  @@id([id])
+  @@map("test_task")
+}
+
+model ReadingTasks {
+  id       String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId   String @unique @map("task_id") @db.Uuid
+  content  String @map("content")
+  duration Int    @map("duration")
+
+  task Tasks @relation(fields: [taskId], references: [id])
+
+  @@id([id])
+  @@map("reading_task")
+}
+
+model ReferralTasks {
+  id           String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId       String @unique @map("task_id") @db.Uuid
+  referralLink String @map("referral_link")
+
+  task Tasks @relation(fields: [taskId], references: [id])
+
+  @@id([id])
+  @@map("referral_tasks")
+}
+
+model VideoTasks {
+  id       String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId   String @unique @map("task_id") @db.Uuid
+  videoUrl String @map("video_url")
+  duration Int    @map("duration")
+
+  task Tasks @relation(fields: [taskId], references: [id])
+
+  @@id([id])
+  @@map("video_tasks")
+}
+
+model SocialShareTasks {
+  id       String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId   String @unique @map("task_id") @db.Uuid
+  platform String @map("platform")
+  content  String @map("content")
+
+  task Tasks @relation(fields: [taskId], references: [id])
+
+  @@id([id])
+  @@map("social_share_tasks")
+}
+
+model SpinTasks {
+  id        String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId    String @unique @map("task_id") @db.Uuid
+  spinCount Int    @map("spin_count")
+
+  task Tasks @relation(fields: [taskId], references: [id])
+
+  @@id([id])
+  @@map("spin_tasks")
+}
+
+model TrueFalseTasks {
+  id            String  @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId        String  @unique @map("task_id") @db.Uuid
+  statement     String  @map("statement")
+  correctAnswer Boolean @map("correct_answer")
+
+  task Tasks @relation(fields: [taskId], references: [id])
+
+  @@id([id])
+  @@map("true_false_tasks")
+}
+
+model RewardTypes {
+  id            String           @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String           @unique @map("name") // Unique constraint on name
+  description   String?          @map("description")
+  rewardCatalog RewardCatalogs[]
+
+  @@id([id])
+  @@map("reward_types")
+}
+
+model RewardCatalogs {
+  id           String   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title        String   @map("title")
+  description  String   @map("description")
+  costCoins    Int      @map("cost")
+  rewardTypeId String   @map("reward_type_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  rewardType  RewardTypes   @relation(fields: [rewardTypeId], references: [id])
+  userRewards UserRewards[]
+
+  @@id([id])
+  @@map("reward_catalogs")
+}
+
+model UserRewards {
+  id         String       @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String       @map("user_id") @db.Uuid
+  rewardId   String       @map("reward_id") @db.Uuid
+  redeemedAt DateTime?    @map("redeemed_at")
+  status     RewardStatus @map("reward_status")
+
+  user          Users          @relation(fields: [userId], references: [id])
+  rewardCatalog RewardCatalogs @relation(fields: [rewardId], references: [id])
+
+  @@id([id])
+  @@map("user_rewards")
+}
+
+model ReferralTrackings {
+  id             String         @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  referrerId     String         @map("referred_id") @db.Uuid
+  referredUserId String         @map("referred_user_id") @db.Uuid
+  status         ReferralStatus @map("status")
+  rewardCoins    Int            @map("reward_coins")
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  referralUser Users @relation(name: "ReferralUser", fields: [referrerId], references: [id])
+  referredUser Users @relation(name: "ReferredUser", fields: [referredUserId], references: [id])
+
+  @@id([id])
+  @@map("referral_trackings")
+}
+
+model TaskVerifications {
+  id                 String             @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId             String             @unique @map("task_id") @db.Uuid
+  userId             String             @map("user_id") @db.Uuid
+  verificationStatus VerificationStatus @map("verification_status")
+  verifiedAt         DateTime           @map("verified_at")
+
+  task Tasks @relation(fields: [taskId], references: [id])
+  user Users @relation(fields: [userId], references: [id])
+
+  @@id([id])
+  @@map("task_verifications")
+}
+
+model Otp {
+  id           String   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  otp          String   @map("otp")
+  fullname     String   @map("fullname")
+  userame      String?  @map("userame")
+  email        String   @map("email")
+  password     String   @map("password")
+  referralCode String   @map("referral_code")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@id([id])
+  @@map("otp")
 }
