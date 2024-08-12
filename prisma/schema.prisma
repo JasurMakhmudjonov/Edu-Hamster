@@ -34,6 +34,7 @@ model Users {
   fullname     String   @map("fullname")
   username     String?  @unique @map("username")
   email        String   @unique @map("email")
+  profileImage String?  @map("profile_image")
   password     String   @map("password")
   referralCode String   @unique @map("referralCode")
   coins        Int      @default(0) @map("coins")

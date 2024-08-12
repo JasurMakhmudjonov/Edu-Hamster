@@ -3,7 +3,7 @@ const otpGenerator = require("otp-generator");
 const sendMail = require("../utils/mail");
 const authValidator = require("../validators/auth.validator");
 const bcrypt = require("bcrypt");
-const { createToken, checkToken } = require("../utils/jwt");
+const { createToken } = require("../utils/jwt");
 const crypto = require("crypto");
 
 // Function to generate a referral code
@@ -49,6 +49,7 @@ const register = async (req, res, next) => {
     });
 
     await sendMail(email, otp);
+    console.log(otp);
 
     await prisma.otp.create({
       data: { fullname, email, password, username, otp, referralCode },
@@ -125,8 +126,36 @@ const login = async (req, res, next) => {
   }
 };
 
+const adminLogin = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    const { error } = authValidator.adminLoginSchema.validateAsync(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.message });
+    }
+
+    const user = await prisma.users.findFirst({
+      where: { email, isAdmin: true },
+    });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid email or password" });
+    }
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: "Invalid email or password" });
+    }
+
+    const token = createToken({ id: user.id, isAdmin: user.isAdmin });
+    res.json({ message: "Admin logged in successfully", token });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   verify,
   login,
+  adminLogin,
 };
