@@ -1,4 +1,4 @@
-const createVideoTaks = async (req, res, next) => {
+const createVideoTask = async (req, res, next) => {
   try {
   } catch (error) {
     next(error);

@@ -9,6 +9,7 @@ const testTaskRoute = require("./testTask.route");
 const trueFalseRoute = require("./trueFalse.route");
 const userTasksRoute = require("./userTasks.route");
 const videoTaskRoute = require("./videoTask.route");
+const taskRoute = require("./task.route");
 
 module.exports = [
   authRoute,
@@ -22,4 +23,5 @@ module.exports = [
   trueFalseRoute,
   userTasksRoute,
   videoTaskRoute,
+  taskRoute,
 ];

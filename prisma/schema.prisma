@@ -52,13 +52,13 @@ model Users {
   taskVerification         TaskVerifications[]
 
   @@id([id])
-  @@map("users")
   @@index([fullname])
+  @@map("users")
 }
 
 model Tasks {
   id          String   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title       String   @map("title")
+  title       String   @unique @map("title")
   description String   @map("description")
   rewardCoins Int      @map("reward_coins")
   createdAt   DateTime @default(now())
@@ -69,7 +69,7 @@ model Tasks {
   testTask        TestTasks?
   readingTask     ReadingTasks?
   referralTask    ReferralTasks?
-  videoTask        VideoTasks?
+  videoTask       VideoTasks?
   socialShareTask SocialShareTasks?
   spinTask        SpinTasks?
   trueFalseTask   TrueFalseTasks?
@@ -120,7 +120,7 @@ model QuizTasks {
 
   task Tasks @relation(fields: [taskId], references: [id])
 
-  @@id([id]) 
+  @@id([id])
   @@map("quiz_tasks")
 }
 
