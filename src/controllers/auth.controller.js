@@ -5,10 +5,14 @@ const authValidator = require("../validators/auth.validator");
 const bcrypt = require("bcrypt");
 const { createToken } = require("../utils/jwt");
 const crypto = require("crypto");
+const redisClient = require("../utils/redis");
 
-// Function to generate a referral code
 function generateReferralCode() {
-  return crypto.randomBytes(4).toString("hex"); // Generates an 8-character random string
+  return crypto.randomBytes(4).toString("hex"); 
+}
+
+function generateReferralCode() {
+  return crypto.randomBytes(4).toString("hex"); 
 }
 
 const register = async (req, res, next) => {
@@ -51,9 +55,12 @@ const register = async (req, res, next) => {
     await sendMail(email, otp);
     console.log(otp);
 
-    await prisma.otp.create({
-      data: { fullname, email, password, username, otp, referralCode },
-    });
+    const registeredUser = await redisClient.setEx(
+      email,
+      600, 
+      JSON.stringify({ fullname, email, password, username, referralCode, otp })
+    );
+    console.log(await redisClient.get(email));
 
     res.status(201).json({
       message: "User registered successfully, please verify your email",
@@ -70,30 +77,31 @@ const verify = async (req, res, next) => {
     if (error) {
       return res.status(400).json({ message: error.message });
     }
-    const findOtp = await prisma.otp.findFirst({
-      where: { email, createdAt: { gt: new Date(new Date() - 60000) } },
-    });
 
-    if (!findOtp || findOtp.otp !== code) {
+    const otpData = await redisClient.get(email);
+    if (!otpData) {
+      return res.status(400).json({ message: "OTP expired or not found" });
+    }
+
+    const { fullname, username, password, referralCode, otp } =
+      JSON.parse(otpData);
+    if (otp !== code) {
       return res.status(400).json({ message: "Invalid OTP code" });
     }
 
-    const findUser = await prisma.otp.findFirst({ where: { email } });
-    if (!findUser) {
-      return res.status(400).json({ message: "User not found" });
-    }
-
-    const hashedPwd = await bcrypt.hash(findOtp.password, 10);
+    const hashedPwd = await bcrypt.hash(password, 10);
 
     const user = await prisma.users.create({
       data: {
-        fullname: findOtp.fullname,
-        username: findOtp.username,
-        email: findOtp.email,
+        fullname,
+        username,
+        email,
         password: hashedPwd,
-        referralCode: findOtp.referralCode,
+        referralCode,
       },
     });
+
+    await redisClient.del(email);
 
     const token = createToken({ id: user.id, isAdmin: user.isAdmin });
     res.json({ message: "User verified successfully", token });
