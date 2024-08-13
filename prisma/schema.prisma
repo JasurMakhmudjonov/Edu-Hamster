@@ -273,18 +273,3 @@ model TaskVerifications {
   @@id([id])
   @@map("task_verifications")
 }
-
-// model Otp {
-//   id           String   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-//   otp          String   @map("otp")
-//   fullname     String   @map("fullname")
-//   userame      String?  @map("userame")
-//   email        String   @map("email")
-//   password     String   @map("password")
-//   referralCode String   @map("referral_code")
-//   createdAt    DateTime @default(now())
-//   updatedAt    DateTime @updatedAt
-
-//   @@id([id])
-//   @@map("otp")
-// }
