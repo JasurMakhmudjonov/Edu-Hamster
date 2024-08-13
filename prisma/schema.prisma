@@ -53,6 +53,7 @@ model Users {
 
   @@id([id])
   @@map("users")
+  @@index([fullname])
 }
 
 model Tasks {
@@ -68,7 +69,7 @@ model Tasks {
   testTask        TestTasks?
   readingTask     ReadingTasks?
   referralTask    ReferralTasks?
-  vdeoTask        VideoTasks?
+  videoTask        VideoTasks?
   socialShareTask SocialShareTasks?
   spinTask        SpinTasks?
   trueFalseTask   TrueFalseTasks?
@@ -119,7 +120,7 @@ model QuizTasks {
 
   task Tasks @relation(fields: [taskId], references: [id])
 
-  @@id([id]) // Unique constraint on taskId
+  @@id([id]) 
   @@map("quiz_tasks")
 }
 
