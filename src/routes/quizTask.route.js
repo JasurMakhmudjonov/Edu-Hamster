@@ -11,7 +11,7 @@ const {
 const { isAuth } = require("../middlewares/is-auth.middleware");
 const router = Router();
 
-const route = "/topics/quizes";
+const route = "/topics/quizzes";
 
 router.post(`${route}/`, createQuiz);
 router.get(`${route}/`, showQuiz);

@@ -3,41 +3,44 @@ const quizTaskValidator = require("../validators/quizTask.validator");
 
 const createQuiz = async (req, res, next) => {
   try {
-    const { taskId, questions, correctAnswers, timeLimit } = req.body;
+    const {
+      title,
+      description,
+      questions,
+      correctAnswers,
+      timeLimit,
+      rewardCoins,
+      topicId,
+    } = req.body;
 
     const { error } = quizTaskValidator.createQuizSchema.validate(req.body);
     if (error) {
       return res.status(400).json({ error: error.message });
     }
 
-    const task = await prisma.tasks.findUnique({
-      where: { id: taskId },
+    const topic = await prisma.topics.findUnique({
+      where: { id: topicId },
     });
 
-    if (!task) {
-      return res.status(404).json({ error: "Task not found" });
+    if (!topic) {
+      return res.status(404).json({ error: "Topic not found" });
     }
 
     const quiz = await prisma.quizTasks.create({
       data: {
-        taskId,
-        questions: JSON.stringify(questions),
-        correctAnswers: JSON.stringify(correctAnswers),
+        title,
+        description,
+        rewardCoins,
+        questions,
+        correctAnswers,
         timeLimit,
+        topicId,
       },
     });
 
     res.status(201).json({
       message: "Quiz created successfully",
-      data: {
-        id: quiz.id,
-        title: task.title,
-        description: task.description,
-        rewardCoins: task.rewardCoins,
-        questions: JSON.parse(quiz.questions),
-        correctAnswers: JSON.parse(quiz.correctAnswers),
-        timeLimit: quiz.timeLimit,
-      },
+      data: quiz,
     });
   } catch (error) {
     next(error);
@@ -47,7 +50,16 @@ const createQuiz = async (req, res, next) => {
 const updateQuiz = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { taskId, questions, correctAnswers, timeLimit } = req.body;
+    const {
+      title,
+      description,
+      questions,
+      correctAnswers,
+      timeLimit,
+      rewardCoins,
+      topicId,
+    } = req.body;
+
     const { error } = quizTaskValidator.updateQuizSchema.validate(req.body);
     if (error) {
       return res.status(400).json({ error: error.message });
@@ -61,43 +73,42 @@ const updateQuiz = async (req, res, next) => {
       return res.status(404).json({ message: "Quiz not found" });
     }
 
-    const task = await prisma.tasks.findFirst({
-      where: { id: taskId },
-    });
+    if (topicId) {
+      const topic = await prisma.topics.findUnique({
+        where: { id: topicId },
+      });
 
-    if (!task) {
-      return res.status(404).json({ message: "Task not found" });
+      if (!topic) {
+        return res.status(404).json({ message: "Topic not found" });
+      }
     }
 
     const updatedQuiz = await prisma.quizTasks.update({
       where: { id },
       data: {
-        taskId,
-        questions: JSON.stringify(questions),
-        correctAnswers: JSON.stringify(correctAnswers),
+        title,
+        description,
+        rewardCoins,
+        topicId,
+        questions,
+        correctAnswers,
         timeLimit,
       },
     });
 
     res.status(200).json({
       message: "Quiz updated successfully",
-      data: {
-        id: updatedQuiz.id,
-        taskId: updatedQuiz.taskId,
-        questions: JSON.parse(updatedQuiz.questions),
-        correctAnswers: JSON.parse(updatedQuiz.correctAnswers),
-        timeLimit: updatedQuiz.timeLimit,
-      },
+      data: updatedQuiz,
     });
   } catch (error) {
-    console.error("Error updating quiz:", error);
     next(error);
   }
 };
 
 const startQuiz = async (req, res, next) => {
   try {
-    const { id } = req.params; 
+    const userId = req.user.id;
+    const { id } = req.params;
 
     const quiz = await prisma.quizTasks.findUnique({
       where: { id },
@@ -107,61 +118,110 @@ const startQuiz = async (req, res, next) => {
       return res.status(404).json({ message: "Quiz not found" });
     }
 
-    await prisma.taskVerifications.deleteMany({
-      where: {
-        taskId: quiz.taskId,
-        userId: req.user.id,
-      },
+    const userTask = await prisma.userTasks.findFirst({
+      where: { userId, topicId: quiz.topicId },
     });
 
-    const updatedQuiz = await prisma.quizTasks.update({
-      where: { id },
-      data: {
-        startTime: new Date(),
-      },
-    });
+    if (userTask) {
+      if (userTask.quizStatus === "ACCEPTED") {
+        return res.status(400).json({
+          message:
+            "Quiz has already been completed and accepted.",
+        });
+      }
+
+      if (userTask.quizStatus === "FAILED") {
+        await prisma.userTasks.delete({
+          where: {
+            id: userTask.id,
+          },
+        });
+
+        await prisma.userTasks.create({
+          data: {
+            userId,
+            topicId: quiz.topicId,
+            quizStatus: "PENDING",
+            quizStartTime: new Date(),
+          },
+        });
+      } else {
+        await prisma.userTasks.update({
+          where: { id: userTask.id },
+          data: {
+            quizStatus: "PENDING",
+            quizStartTime: new Date(),
+          },
+        });
+      }
+    } else {
+      await prisma.userTasks.create({
+        data: {
+          userId,
+          topicId: quiz.topicId,
+          quizStatus: "PENDING",
+          quizStartTime: new Date(),
+        },
+      });
+    }
 
     res.status(200).json({
       message: "Quiz started",
-      data: updatedQuiz,
+      data: quiz,
     });
   } catch (error) {
-    console.error("Error starting quiz:", error);
     next(error);
   }
 };
 
-
 const submitQuiz = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id;
     const { userAnswers } = req.body;
 
     const quiz = await prisma.quizTasks.findUnique({
       where: { id },
-      include: { task: true },
     });
 
     if (!quiz) {
       return res.status(404).json({ message: "Quiz not found" });
     }
 
-    const endTime = new Date();
-    const timeTaken = (endTime - new Date(quiz.startTime)) / 1000;
+    const userTask = await prisma.userTasks.findFirst({
+      where: {
+        userId: userId,
+        topicId: quiz.topicId,
+      },
+    });
 
-    if (timeTaken > quiz.timeLimit) {
-      await prisma.taskVerifications.create({
-        data: {
-          taskId: quiz.taskId,
-          userId: req.user.id,
-          verificationStatus: "FAILED",
-          verifiedAt: endTime,
-        },
-      });
-      return res.status(400).json({ message: "Time limit exceeded. Quiz failed." });
+    if (!userTask) {
+      return res.status(404).json({ message: "User task not found" });
     }
 
-    const correctAnswers = JSON.parse(quiz.correctAnswers);
+    if (userTask.quizStatus === "ACCEPTED") {
+      return res
+        .status(400)
+        .json({ message: "Quiz has already been completed and accepted." });
+    }
+
+    const endTime = new Date();
+    const timeTaken = (endTime - new Date(userTask.quizStartTime)) / 60000;
+
+    if (timeTaken > quiz.timeLimit) {
+      await prisma.userTasks.update({
+        where: { id: userTask.id },
+        data: {
+          quizStatus: "FAILED",
+          updatedAt: endTime,
+        },
+      });
+      return res
+        .status(400)
+        .json({ message: "Time limit exceeded. Quiz failed." });
+    }
+
+    const correctAnswers = quiz.correctAnswers;
     let score = 0;
 
     for (let i = 0; i < correctAnswers.length; i++) {
@@ -171,74 +231,51 @@ const submitQuiz = async (req, res, next) => {
     }
 
     const percentageCorrect = (score * 100) / correctAnswers.length;
-    const verificationStatus = percentageCorrect >= 60 ? "VERIFIED" : "FAILED";
+    const quizStatus = percentageCorrect >= 60 ? "ACCEPTED" : "FAILED";
     let rewardCoins = 0;
 
-    if (verificationStatus === "VERIFIED") {
-      rewardCoins = quiz.task.rewardCoins;
+    if (quizStatus === "ACCEPTED") {
+      rewardCoins = quiz.rewardCoins;
 
       await prisma.users.update({
-        where: { id: req.user.id },
+        where: { id: userId },
         data: {
-          coins: {
+          totalCoins: {
             increment: rewardCoins,
           },
         },
       });
     }
 
-    const existingVerification = await prisma.taskVerifications.findFirst({
+    await prisma.userTasks.update({
       where: {
-        taskId: quiz.taskId,
-        userId: req.user.id,
+        id: userTask.id,
+      },
+      data: {
+        quizStatus,
+        quizStartTime: endTime,
       },
     });
 
-    if (existingVerification) {
-      await prisma.taskVerifications.update({
-        where: {
-          id: existingVerification.id,
-        },
-        data: {
-          verificationStatus,
-          verifiedAt: endTime,
-        },
-      });
-    } else {
-      await prisma.taskVerifications.create({
-        data: {
-          taskId: quiz.taskId,
-          userId: req.user.id,
-          verificationStatus,
-          verifiedAt: endTime,
-        },
-      });
-    }
+    const data = {
+      score,
+      totalQuestions: correctAnswers.length,
+      rewardCoins: quizStatus === "ACCEPTED" ? rewardCoins : 0,
+      quizStatus,
+    };
 
     res.status(200).json({
       message: "Quiz submitted successfully",
-      data: {
-        score,
-        totalQuestions: correctAnswers.length,
-        rewardCoins: verificationStatus === "VERIFIED" ? rewardCoins : 0,
-        verificationStatus,
-      },
+      data: data,
     });
   } catch (error) {
-    console.error("Error submitting quiz:", error);
     next(error);
   }
 };
 
-
 const showQuiz = async (req, res, next) => {
   try {
-    const quizes = await prisma.quizTasks.findMany({
-      include: {
-        task: true,
-      },
-    });
-
+    const quizes = await prisma.quizTasks.findMany();
     if (quizes.length > 0) {
       return res.status(200).json({
         message: "Quizzes found",
@@ -263,13 +300,7 @@ const showQuizById = async (req, res, next) => {
     }
     res.status(200).json({
       message: "Quiz found",
-      data: {
-        id: quiz.id,
-        taskId: quiz.taskId,
-        questions: JSON.parse(quiz.questions),
-        correctAnswers: JSON.parse(quiz.correctAnswers),
-        timeLimit: quiz.timeLimit,
-      },
+      data: quiz,
     });
   } catch (error) {
     next(error);
