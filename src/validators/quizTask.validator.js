@@ -32,7 +32,15 @@ const updateQuizSchema = Joi.object({
   timeLimit: Joi.number().integer().min(1),
 });
 
+const submitQuizSchema = Joi.object({
+  userAnswers: Joi.array()
+    .items(Joi.number().integer().min(0).required())
+    .length(Joi.ref("questions.length"))
+    .required(),
+});
+
 module.exports = {
   createQuizSchema,
   updateQuizSchema,
+  submitQuizSchema,
 };

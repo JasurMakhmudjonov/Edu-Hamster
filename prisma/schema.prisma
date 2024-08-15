@@ -66,7 +66,6 @@ model Tasks {
 
   userTask        UserTasks[]
   quizTask        QuizTasks?
-  testTask        TestTasks?
   readingTask     ReadingTasks?
   referralTask    ReferralTasks?
   videoTask       VideoTasks?
@@ -96,13 +95,12 @@ model Taps {
 }
 
 model UserTasks {
-  id             String     @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId         String     @map("user_id") @db.Uuid
-  taskId         String     @map("task_id") @db.Uuid
-  status         TaskStatus @map("status")
+  id             String    @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  taskId         String    @map("task_id") @db.Uuid
   completionDate DateTime?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   user Users @relation(fields: [userId], references: [id])
   task Tasks @relation(fields: [taskId], references: [id])
@@ -112,11 +110,12 @@ model UserTasks {
 }
 
 model QuizTasks {
-  id             String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  taskId         String @unique @map("task_id") @db.Uuid
-  questions      Json   @map("questions")
-  correctAnswers Json   @map("correct_answers")
-  timeLimit      Int    @map("time_limit")
+  id             String   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId         String   @unique @map("task_id") @db.Uuid
+  questions      Json     @map("questions")
+  correctAnswers Json     @map("correct_answers")
+  timeLimit      Int      @map("time_limit")
+  startTime      DateTime? @map("start_time")
 
   task Tasks @relation(fields: [taskId], references: [id])
 
@@ -124,24 +123,12 @@ model QuizTasks {
   @@map("quiz_tasks")
 }
 
-model TestTasks {
-  id             String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  taskId         String @unique @db.Uuid
-  questions      Json   @map("questions")
-  correctAnswers Json   @map("correct_answers")
-  timeLimit      Int    @map("time_limit")
-
-  task Tasks @relation(fields: [taskId], references: [id])
-
-  @@id([id])
-  @@map("test_task")
-}
-
 model ReadingTasks {
   id       String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   taskId   String @unique @map("task_id") @db.Uuid
   content  String @map("content")
   duration Int    @map("duration")
+  startTime      DateTime? @map("start_time")
 
   task Tasks @relation(fields: [taskId], references: [id])
 
@@ -263,7 +250,7 @@ model ReferralTrackings {
 
 model TaskVerifications {
   id                 String             @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  taskId             String             @unique @map("task_id") @db.Uuid
+  taskId             String             @map("task_id") @db.Uuid
   userId             String             @map("user_id") @db.Uuid
   verificationStatus VerificationStatus @map("verification_status")
   verifiedAt         DateTime           @map("verified_at")

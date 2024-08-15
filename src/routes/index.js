@@ -5,7 +5,6 @@ const readingTaskRoute = require("./readingTask.route");
 const referralTaskRoute = require("./referralTask.route");
 const socialTaskRoute = require("./socialTask.route");
 const spinTaskRoute = require("./spinTask.route");
-const testTaskRoute = require("./testTask.route");
 const trueFalseRoute = require("./trueFalse.route");
 const userTasksRoute = require("./userTasks.route");
 const videoTaskRoute = require("./videoTask.route");
@@ -19,7 +18,6 @@ module.exports = [
   referralTaskRoute,
   socialTaskRoute,
   spinTaskRoute,
-  testTaskRoute,
   trueFalseRoute,
   userTasksRoute,
   videoTaskRoute,
