@@ -9,7 +9,7 @@ const {
 } = require("../controllers/topic.controller");
 const router = Router();
 
-const route = "/topic";
+const route = "/topics";
 
 router.post(`${route}/`, createTopic);
 router.get(`${route}/`, showTopic);
