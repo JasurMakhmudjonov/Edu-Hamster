@@ -8,20 +8,18 @@ const crypto = require("crypto");
 const redisClient = require("../utils/redis");
 
 function generateReferralCode() {
-  return crypto.randomBytes(4).toString("hex"); 
+  return crypto.randomBytes(4).toString("hex");
 }
 
 function generateReferralCode() {
-  return crypto.randomBytes(4).toString("hex"); 
+  return crypto.randomBytes(4).toString("hex");
 }
 
 const register = async (req, res, next) => {
   try {
     const { fullname, username, email, password } = req.body;
 
-    const { error } = await authValidator.registerSchema.validateAsync(
-      req.body
-    );
+    const { error } = authValidator.registerSchema.validate(req.body);
     if (error) {
       return res.status(400).json({ message: error.message });
     }
@@ -31,13 +29,11 @@ const register = async (req, res, next) => {
       return res.status(400).json({ message: "Email already exists" });
     }
 
-    if (username) {
-      const existsUserByUsername = await prisma.users.findFirst({
-        where: { username },
-      });
-      if (existsUserByUsername) {
-        return res.status(400).json({ message: "Username already exists" });
-      }
+    const existsUserByUsername = await prisma.users.findFirst({
+      where: { username },
+    });
+    if (existsUserByUsername) {
+      return res.status(400).json({ message: "Username already exists" });
     }
 
     let referralCode;
@@ -57,7 +53,7 @@ const register = async (req, res, next) => {
 
     const registeredUser = await redisClient.setEx(
       email,
-      600, 
+      600,
       JSON.stringify({ fullname, email, password, username, referralCode, otp })
     );
     console.log(await redisClient.get(email));
@@ -113,7 +109,7 @@ const verify = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    const { error } = authValidator.loginSchema.validateAsync(req.body);
+    const { error } = authValidator.loginSchema.validate(req.body);
     if (error) {
       return res.status(400).json({ message: error.message });
     }
@@ -138,7 +134,7 @@ const adminLogin = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    const { error } = authValidator.adminLoginSchema.validateAsync(req.body);
+    const { error } = authValidator.adminLoginSchema.validate(req.body);
     if (error) {
       return res.status(400).json({ message: error.message });
     }

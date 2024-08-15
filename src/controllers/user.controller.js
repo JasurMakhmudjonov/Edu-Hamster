@@ -120,13 +120,13 @@ const updateByAdmin = async (req, res, next) => {
       email,
       password,
       referralCode,
-      coins,
-      currentLevel,
-      xpPoints,
+      totalCoins,
+      level,
+      points,
       isAdmin,
     } = req.body;
 
-    const { error } = await userValidator.updateUserSchemaByAdmin.validateAsync(
+    const { error } = userValidator.updateUserSchemaByAdmin.validate(
       req.body
     );
     if (error) {
@@ -142,9 +142,9 @@ const updateByAdmin = async (req, res, next) => {
       username,
       email,
       referralCode,
-      coins: +coins,
-      currentLevel,
-      xpPoints,
+      totalCoins: +totalCoins,
+      level,
+      points,
       isAdmin: Boolean(isAdmin),
     };
 
@@ -181,7 +181,6 @@ const updateByAdmin = async (req, res, next) => {
 
     res.json({ message: "User updated successfully", data: updatedUser });
   } catch (error) {
-    console.error("Error updating user:", error);
     next(error);
   }
 };

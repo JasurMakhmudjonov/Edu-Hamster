@@ -8,7 +8,7 @@ const {
 } = require("../controllers/readingTask.controller");
 const router = Router();
 
-const route = "/tasks/reading";
+const route = "/topics/reading";
 
 router.post(`${route}/`, createReadingTask);
 router.get(`${route}/`, showReadingTask);

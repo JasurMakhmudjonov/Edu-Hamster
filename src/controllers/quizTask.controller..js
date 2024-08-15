@@ -48,7 +48,6 @@ const updateQuiz = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { taskId, questions, correctAnswers, timeLimit } = req.body;
-
     const { error } = quizTaskValidator.updateQuizSchema.validate(req.body);
     if (error) {
       return res.status(400).json({ error: error.message });

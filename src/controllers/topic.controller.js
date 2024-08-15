@@ -1,7 +1,7 @@
 const prisma = require("../utils/connection");
 const taskValidator = require("../validators/task.validator");
 
-const createTask = async (req, res, next) => {
+const createTopic = async (req, res, next) => {
   try {
     const { title, description, rewardCoins } = req.body;
 
@@ -28,7 +28,7 @@ const createTask = async (req, res, next) => {
   }
 };
 
-const showTask = async (req, res, next) => {
+const showTopic = async (req, res, next) => {
   try {
     const allTasks = await prisma.tasks.findMany();
 
@@ -42,7 +42,7 @@ const showTask = async (req, res, next) => {
   }
 };
 
-const showTaskById = async (req, res, next) => {
+const showTopicById = async (req, res, next) => {
   try {
     const { id } = req.params;
     const task = await prisma.tasks.findUnique({ where: { id } });
@@ -57,7 +57,7 @@ const showTaskById = async (req, res, next) => {
   }
 };
 
-const updateTask = async (req, res, next) => {
+const updateTopic = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { title, description, rewardCoins } = req.body;
@@ -85,7 +85,7 @@ const updateTask = async (req, res, next) => {
   }
 };
 
-const removeTask = async (req, res, next) => {
+const removeTopic = async (req, res, next) => {
   try {
     const { id } = req.params;
     const task = await prisma.tasks.findUnique({ where: { id } });
@@ -102,9 +102,9 @@ const removeTask = async (req, res, next) => {
 };
 
 module.exports = {
-  createTask,
-  showTask,
-  showTaskById,
-  updateTask,
-  removeTask,
+  createTopic,
+  showTopic,
+  showTopicById,
+  updateTopic,
+  removeTopic,
 };

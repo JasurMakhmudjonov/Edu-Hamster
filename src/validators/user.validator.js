@@ -4,6 +4,7 @@ const updateUserSchema = Joi.object({
   fullname: Joi.string(),
   username: Joi.string(),
   password: Joi.string(),
+  profileImge: Joi.string(),
 });
 
 const updateUserSchemaByAdmin = Joi.object({
@@ -12,9 +13,9 @@ const updateUserSchemaByAdmin = Joi.object({
   email: Joi.string().email(),
   password: Joi.string(),
   referralcode: Joi.string(),
-  coins: Joi.number(),
-  currentLevel: Joi.number(),
-  xpPoints: Joi.number(),
+  totalCoins: Joi.number(),
+  level: Joi.number(),
+  points: Joi.number(),
   isAdmin: Joi.boolean(),
 });
 

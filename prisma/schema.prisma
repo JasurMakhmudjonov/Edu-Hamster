@@ -7,257 +7,247 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum TopicStatus {
+  STARTED
+  COMPLETED
+}
+
 enum TaskStatus {
   PENDING
-  COMPLETED
   FAILED
-}
-
-enum RewardStatus {
-  PENDING
-  REDEEMED
-}
-
-enum ReferralStatus {
-  PENDING
-  COMPLETED
-}
-
-enum VerificationStatus {
-  PENDING
-  VERIFIED
-  FAILED
+  ACCEPTED
 }
 
 model Users {
-  id           String   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  fullname     String   @map("fullname")
-  username     String?  @unique @map("username")
-  email        String   @unique @map("email")
-  profileImage String?  @map("profile_image")
-  password     String   @map("password")
-  referralCode String   @unique @map("referralCode")
-  coins        Int      @default(0) @map("coins")
-  currentLevel Int      @default(1) @map("currentLevel")
-  xpPoints     Int      @default(0) @map("xpPoints")
-  isAdmin      Boolean  @default(false) @map("isAdmin")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fullname      String
+  email         String          @unique
+  username      String          @unique
+  profileImage  String?
+  password      String
+  isAdmin       Boolean         @default(false)
+  totalCoins    Int             @default(0)
+  referralCode  String          @unique
+  points        Int             @default(0)
+  level         Int             @default(1)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  deletedAt     DateTime?
+  userTasks     UserTasks[]
+  notifications Notifications[]
+  purchases     Purchases[]
 
-  userTask                 UserTasks[]
-  userRewards              UserRewards[]
-  referralTrackingReferral ReferralTrackings[] @relation("ReferralUser")
-  referralTrackingReferred ReferralTrackings[] @relation("ReferredUser")
-  tap                      Taps[]
-  taskVerification         TaskVerifications[]
-
-  @@id([id])
-  @@index([fullname])
+  @@index([email])
+  @@index([username])
+  @@index([referralCode])
+  @@index([deletedAt])
   @@map("users")
 }
 
-model Tasks {
-  id          String   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title       String   @unique @map("title")
-  description String   @map("description")
-  rewardCoins Int      @map("reward_coins")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model TopicCategories {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  topics    Topics[]
 
-  userTask        UserTasks[]
-  quizTask        QuizTasks?
-  readingTask     ReadingTasks?
-  referralTask    ReferralTasks?
-  videoTask       VideoTasks?
-  socialShareTask SocialShareTasks?
-  spinTask        SpinTasks?
-  trueFalseTask   TrueFalseTasks?
-
-  taskVerification TaskVerifications[]
-
-  @@id([id])
-  @@map("tasks")
+  @@index([name])
+  @@map("topic_categories")
 }
 
-model Taps {
-  id          String   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId      String   @map("user_id") @db.Uuid
-  tapLength   Int      @map("tap_length")
-  fingerCount Int      @map("finger_count")
-  earnedCoins Int      @map("earned_coins")
-  level       Int      @map("level")
-  createdAt   DateTime @default(now()) @map("created_at")
+model Topics {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String           @unique
+  description String
+  categoryId  String           @db.Uuid
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  category    TopicCategories  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  quizzes     QuizTasks[]
+  readings    ReadingTasks[]
+  videos      VideoTasks[]
+  trueFalse   TrueFalseTasks[]
+  userTasks   UserTasks[]
 
-  user Users @relation(fields: [userId], references: [id])
-
-  @@id([id])
-  @@map("taps")
-}
-
-model UserTasks {
-  id             String    @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId         String    @map("user_id") @db.Uuid
-  taskId         String    @map("task_id") @db.Uuid
-  completionDate DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  user Users @relation(fields: [userId], references: [id])
-  task Tasks @relation(fields: [taskId], references: [id])
-
-  @@id([id])
-  @@map("user_tasks")
+  @@index([title])
+  @@index([categoryId])
+  @@index([createdAt])
 }
 
 model QuizTasks {
-  id             String   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  taskId         String   @unique @map("task_id") @db.Uuid
-  questions      Json     @map("questions")
-  correctAnswers Json     @map("correct_answers")
-  timeLimit      Int      @map("time_limit")
-  startTime      DateTime? @map("start_time")
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title          String
+  description    String?
+  rewardCoins    Int
+  questions      Json[]
+  correctAnswers Int[]
+  timeLimit      Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  topicId        String   @db.Uuid
+  topic          Topics   @relation(fields: [topicId], references: [id], onDelete: Cascade)
 
-  task Tasks @relation(fields: [taskId], references: [id])
-
-  @@id([id])
+  @@index([title])
+  @@index([rewardCoins])
+  @@index([topicId])
+  @@index([createdAt])
   @@map("quiz_tasks")
 }
 
 model ReadingTasks {
-  id       String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  taskId   String @unique @map("task_id") @db.Uuid
-  content  String @map("content")
-  duration Int    @map("duration")
-  startTime      DateTime? @map("start_time")
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String
+  description String?
+  content     String
+  timeLimit   Int
+  rewardCoins Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  topicId     String   @db.Uuid
+  topic       Topics   @relation(fields: [topicId], references: [id], onDelete: Cascade)
 
-  task Tasks @relation(fields: [taskId], references: [id])
-
-  @@id([id])
-  @@map("reading_task")
-}
-
-model ReferralTasks {
-  id           String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  taskId       String @unique @map("task_id") @db.Uuid
-  referralLink String @map("referral_link")
-
-  task Tasks @relation(fields: [taskId], references: [id])
-
-  @@id([id])
-  @@map("referral_tasks")
+  @@index([title])
+  @@index([rewardCoins])
+  @@index([topicId])
+  @@index([createdAt])
+  @@map("reading_tasks")
 }
 
 model VideoTasks {
-  id       String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  taskId   String @unique @map("task_id") @db.Uuid
-  videoUrl String @map("video_url")
-  duration Int    @map("duration")
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title         String
+  description   String?
+  videoUrl      String
+  videoDuration Int
+  rewardCoins   Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  topicId       String   @db.Uuid
+  topic         Topics   @relation(fields: [topicId], references: [id], onDelete: Cascade)
 
-  task Tasks @relation(fields: [taskId], references: [id])
-
-  @@id([id])
+  @@index([title])
+  @@index([rewardCoins])
+  @@index([topicId])
+  @@index([createdAt])
   @@map("video_tasks")
 }
 
-model SocialShareTasks {
-  id       String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  taskId   String @unique @map("task_id") @db.Uuid
-  platform String @map("platform")
-  content  String @map("content")
-
-  task Tasks @relation(fields: [taskId], references: [id])
-
-  @@id([id])
-  @@map("social_share_tasks")
-}
-
-model SpinTasks {
-  id        String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  taskId    String @unique @map("task_id") @db.Uuid
-  spinCount Int    @map("spin_count")
-
-  task Tasks @relation(fields: [taskId], references: [id])
-
-  @@id([id])
-  @@map("spin_tasks")
-}
-
 model TrueFalseTasks {
-  id            String  @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  taskId        String  @unique @map("task_id") @db.Uuid
-  statement     String  @map("statement")
-  correctAnswer Boolean @map("correct_answer")
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title          String
+  description    String?
+  questions      Json[]
+  correctAnswers Boolean[]
+  rewardCoins    Int
+  timeLimit      Int
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  topicId        String    @db.Uuid
+  topic          Topics    @relation(fields: [topicId], references: [id], onDelete: Cascade)
 
-  task Tasks @relation(fields: [taskId], references: [id])
-
-  @@id([id])
+  @@index([title])
+  @@index([rewardCoins])
+  @@index([topicId])
+  @@index([createdAt])
   @@map("true_false_tasks")
 }
 
-model RewardTypes {
-  id            String           @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name          String           @unique @map("name") // Unique constraint on name
-  description   String?          @map("description")
-  rewardCatalog RewardCatalogs[]
+model SpinRewards {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rewardCoins Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  @@id([id])
-  @@map("reward_types")
+  @@index([rewardCoins])
+  @@index([createdAt])
+  @@map("spin_rewards")
 }
 
-model RewardCatalogs {
-  id           String   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title        String   @map("title")
-  description  String   @map("description")
-  costCoins    Int      @map("cost")
-  rewardTypeId String   @map("reward_type_id") @db.Uuid
-  createdAt    DateTime @default(now()) @map("created_at")
+model ExchangeItemCategories {
+  id        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String          @unique
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  items     ExchangeItems[]
 
-  rewardType  RewardTypes   @relation(fields: [rewardTypeId], references: [id])
-  userRewards UserRewards[]
-
-  @@id([id])
-  @@map("reward_catalogs")
+  @@index([name])
+  @@map("exchange_item_categories")
 }
 
-model UserRewards {
-  id         String       @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId     String       @map("user_id") @db.Uuid
-  rewardId   String       @map("reward_id") @db.Uuid
-  redeemedAt DateTime?    @map("redeemed_at")
-  status     RewardStatus @map("reward_status")
+model ExchangeItems {
+  id          String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  coinPrice   Int
+  title       String
+  description String
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  categoryId  String                 @db.Uuid
+  category    ExchangeItemCategories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  purchases   Purchases[]
 
-  user          Users          @relation(fields: [userId], references: [id])
-  rewardCatalog RewardCatalogs @relation(fields: [rewardId], references: [id])
-
-  @@id([id])
-  @@map("user_rewards")
+  @@index([coinPrice])
+  @@index([title])
+  @@index([categoryId])
+  @@index([createdAt])
+  @@map("exchange_items")
 }
 
-model ReferralTrackings {
-  id             String         @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  referrerId     String         @map("referred_id") @db.Uuid
-  referredUserId String         @map("referred_user_id") @db.Uuid
-  status         ReferralStatus @map("status")
-  rewardCoins    Int            @map("reward_coins")
-  createdAt      DateTime       @default(now()) @map("created_at")
+model Purchases {
+  id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String        @db.Uuid
+  user      Users         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId    String        @db.Uuid
+  item      ExchangeItems @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
-  referralUser Users @relation(name: "ReferralUser", fields: [referrerId], references: [id])
-  referredUser Users @relation(name: "ReferredUser", fields: [referredUserId], references: [id])
-
-  @@id([id])
-  @@map("referral_trackings")
+  @@index([userId])
+  @@index([itemId])
+  @@index([createdAt])
+  @@map("purchases")
 }
 
-model TaskVerifications {
-  id                 String             @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  taskId             String             @map("task_id") @db.Uuid
-  userId             String             @map("user_id") @db.Uuid
-  verificationStatus VerificationStatus @map("verification_status")
-  verifiedAt         DateTime           @map("verified_at")
+model Notifications {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  user      Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   String
+  isChecked Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  task Tasks @relation(fields: [taskId], references: [id])
-  user Users @relation(fields: [userId], references: [id])
+  @@index([userId])
+  @@index([isChecked])
+  @@index([createdAt])
+  @@map("notifications")
+}
 
-  @@id([id])
-  @@map("task_verifications")
+model UserTasks {
+  id                 String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String      @db.Uuid
+  user               Users       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topicId            String      @db.Uuid
+  topic              Topics      @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  topicStatus        TopicStatus
+  quizStatus         TaskStatus
+  quizStartTime      DateTime?
+  readingStatus      TaskStatus
+  readingStartTime   DateTime?
+  trueFalseStatus    TaskStatus
+  trueFalseStartTime DateTime?
+  videoStatus        TaskStatus
+  videoStartTime     DateTime?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([topicId])
+  @@index([topicStatus])
+  @@index([createdAt])
+  @@index([quizStatus, quizStartTime])
+  @@index([readingStatus, readingStartTime])
+  @@index([trueFalseStatus, trueFalseStartTime])
+  @@index([videoStatus, videoStartTime])
+  @@index([userId, topicId])
+  @@map("user_tasks")
 }

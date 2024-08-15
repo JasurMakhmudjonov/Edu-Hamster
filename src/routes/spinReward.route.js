@@ -5,7 +5,7 @@ const {
   updateSpinTask,
   removeSpinTask,
   showSpinTaskById,
-} = require("../controllers/spinTask.controller");
+} = require("../controllers/spinReward.controller");
 const router = Router();
 
 const route = "/tasks/spin";
