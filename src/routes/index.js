@@ -20,4 +20,4 @@ module.exports = [
   videoTaskRoute,
   topicRoute,
   topicCategoryRoute,
-];
+]

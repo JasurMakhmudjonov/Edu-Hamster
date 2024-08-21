@@ -34,10 +34,27 @@ const removeTFTask = async (req, res, next) => {
   }
 };
 
+const startTFTask = async (req, res, next) => {
+  try {
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+const submitTFTask = async (req, res, next) => {
+  try {
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createTFTask,
   showTFTask,
   showTFTaskById,
   updateTFTask,
   removeTFTask,
+  startTFTask,
+  submitTFTask,
 };

@@ -118,47 +118,26 @@ const startQuiz = async (req, res, next) => {
       return res.status(404).json({ message: "Quiz not found" });
     }
 
-    const userTask = await prisma.userTasks.findFirst({
-      where: { userId, topicId: quiz.topicId },
+    const userQuizTask = await prisma.userQuizTasks.findFirst({
+      where: { userId, quizTaskId: quiz.id },
     });
 
-    if (userTask) {
-      if (userTask.quizStatus === "ACCEPTED") {
-        return res.status(400).json({
+    if (userQuizTask) {
+      if (
+        userQuizTask.quizStatus === "ACCEPTED" ||
+        userQuizTask.quizStatus === "FAILED"
+      ) {
+        return res.status(200).json({
           message:
-            "Quiz has already been completed and accepted.",
-        });
-      }
-
-      if (userTask.quizStatus === "FAILED") {
-        await prisma.userTasks.delete({
-          where: {
-            id: userTask.id,
-          },
-        });
-
-        await prisma.userTasks.create({
-          data: {
-            userId,
-            topicId: quiz.topicId,
-            quizStatus: "PENDING",
-            quizStartTime: new Date(),
-          },
-        });
-      } else {
-        await prisma.userTasks.update({
-          where: { id: userTask.id },
-          data: {
-            quizStatus: "PENDING",
-            quizStartTime: new Date(),
-          },
+            "Quiz retake started. No additional reward coins will be awarded.",
+          data: quiz,
         });
       }
     } else {
-      await prisma.userTasks.create({
+      await prisma.userQuizTasks.create({
         data: {
           userId,
-          topicId: quiz.topicId,
+          quizTaskId: quiz.id,
           quizStatus: "PENDING",
           quizStartTime: new Date(),
         },
@@ -188,29 +167,23 @@ const submitQuiz = async (req, res, next) => {
       return res.status(404).json({ message: "Quiz not found" });
     }
 
-    const userTask = await prisma.userTasks.findFirst({
+    const userQuizTask = await prisma.userQuizTasks.findFirst({
       where: {
         userId: userId,
-        topicId: quiz.topicId,
+        quizTaskId: quiz.id,
       },
     });
 
-    if (!userTask) {
+    if (!userQuizTask) {
       return res.status(404).json({ message: "User task not found" });
     }
 
-    if (userTask.quizStatus === "ACCEPTED") {
-      return res
-        .status(400)
-        .json({ message: "Quiz has already been completed and accepted." });
-    }
-
     const endTime = new Date();
-    const timeTaken = (endTime - new Date(userTask.quizStartTime)) / 60000;
+    const timeTaken = (endTime - new Date(userQuizTask.quizStartTime)) / 60000;
 
     if (timeTaken > quiz.timeLimit) {
-      await prisma.userTasks.update({
-        where: { id: userTask.id },
+      await prisma.userQuizTasks.update({
+        where: { id: userQuizTask.id },
         data: {
           quizStatus: "FAILED",
           updatedAt: endTime,
@@ -234,7 +207,7 @@ const submitQuiz = async (req, res, next) => {
     const quizStatus = percentageCorrect >= 60 ? "ACCEPTED" : "FAILED";
     let rewardCoins = 0;
 
-    if (quizStatus === "ACCEPTED") {
+    if (quizStatus === "ACCEPTED" && userQuizTask.quizStatus === "PENDING") {
       rewardCoins = quiz.rewardCoins;
 
       await prisma.users.update({
@@ -247,9 +220,9 @@ const submitQuiz = async (req, res, next) => {
       });
     }
 
-    await prisma.userTasks.update({
+    await prisma.userQuizTasks.update({
       where: {
-        id: userTask.id,
+        id: userQuizTask.id,
       },
       data: {
         quizStatus,
@@ -260,7 +233,10 @@ const submitQuiz = async (req, res, next) => {
     const data = {
       score,
       totalQuestions: correctAnswers.length,
-      rewardCoins: quizStatus === "ACCEPTED" ? rewardCoins : 0,
+      rewardCoins:
+        quizStatus === "ACCEPTED" && userQuizTask.quizStatus === "PENDING"
+          ? rewardCoins
+          : 0,
       quizStatus,
     };
 

@@ -1,14 +1,20 @@
 const Joi = require("joi");
 
 const createReadingTaskSchema = Joi.object({
-  taskId: Joi.string().uuid().required(),
+  title: Joi.string().required(),
+  description: Joi.string().required(),
   content: Joi.string().required(),
-  duration: Joi.number().min(1).required(),
+  timeLimit: Joi.number().required(),
+  rewardCoins: Joi.number().required(),
+  topicId: Joi.string().uuid().required(),
 });
 const updateReadingTaskSchema = Joi.object({
-  taskId: Joi.string().uuid(),
+  title: Joi.string(),
+  description: Joi.string(),
   content: Joi.string(),
-  duration: Joi.number().min(1),
+  timeLimit: Joi.number(),
+  rewardCoins: Joi.number(),
+  topicId: Joi.string().uuid(),
 });
 
 module.exports = { createReadingTaskSchema, updateReadingTaskSchema };
