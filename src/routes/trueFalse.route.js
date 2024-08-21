@@ -13,7 +13,7 @@ const {
 const { isAuth } = require("../middlewares/is-auth.middleware");
 const router = Router();
 
-const route = "/tasks/";
+const route = "/topics/true-false-task";
 
 router.post(`${route}/`, createTFTask);
 router.get(`${route}/`, showTFTask);

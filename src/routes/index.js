@@ -4,7 +4,6 @@ const quizTaskRoute = require("./quizTask.route");
 const readingTaskRoute = require("./readingTask.route");
 const spinRewardRoute = require("./spinReward.route");
 const trueFalseRoute = require("./trueFalse.route");
-const userTasksRoute = require("./userTasks.route");
 const videoTaskRoute = require("./videoTask.route");
 const topicRoute = require("./topic.route");
 const topicCategoryRoute = require("./topicCategory.route");
@@ -16,7 +15,6 @@ module.exports = [
   readingTaskRoute,
   spinRewardRoute,
   trueFalseRoute,
-  userTasksRoute,
   videoTaskRoute,
   topicRoute,
   topicCategoryRoute,

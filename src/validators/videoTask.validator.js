@@ -4,8 +4,8 @@ const createVideoTaskSchema = Joi.object({
   title: Joi.string().required().min(3).max(64),
   description: Joi.string().optional().max(1000),
   videoUrl: Joi.string().uri().required(),
-  videoDuration: Joi.number().integer().positive().required(),
-  rewardCoins: Joi.number().integer().positive().required(),
+  videoDuration: Joi.number().integer().positive().min(0).required(),
+  rewardCoins: Joi.number().integer().positive().min(0).required(),
   topicId: Joi.string().uuid().required(),
 });
 
