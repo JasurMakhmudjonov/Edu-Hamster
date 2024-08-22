@@ -7,6 +7,7 @@ const trueFalseRoute = require("./trueFalse.route");
 const videoTaskRoute = require("./videoTask.route");
 const topicRoute = require("./topic.route");
 const topicCategoryRoute = require("./topicCategory.route");
+const EICRoute = require("./exchangeItemsCategories.route")
 
 module.exports = [
   authRoute,
@@ -18,4 +19,5 @@ module.exports = [
   videoTaskRoute,
   topicRoute,
   topicCategoryRoute,
+  EICRoute,
 ]
