@@ -1,19 +1,23 @@
 const { Router } = require("express");
 const {
-  createSpinTask,
-  showSpinTask,
-  updateSpinTask,
-  removeSpinTask,
-  showSpinTaskById,
+  createSpinReward,
+  showSpinReward,
+  updateSpinReward,
+  removeSpinReward,
+  showSpinRewardById,
+  addToTotalCoins,
 } = require("../controllers/spinReward.controller");
+const { isAuth } = require("../middlewares/is-auth.middleware");
 const router = Router();
 
-const route = "/tasks/spin";
+const route = "/spin-rewards";
 
-router.post(`${route}/`, createSpinTask);
-router.get(`${route}/`, showSpinTask);
-router.get(`${route}/:id`, showSpinTaskById);
-router.put(`${route}/:id`, updateSpinTask);
-router.delete(`${route}/:id`, removeSpinTask);
+router.post(`${route}/`, createSpinReward);
+router.get(`${route}/`, showSpinReward);
+router.get(`${route}/:id`, showSpinRewardById);
+router.put(`${route}/:id`, updateSpinReward);
+router.delete(`${route}/:id`, removeSpinReward);
+
+router.post(`${route}/add`, isAuth, addToTotalCoins);
 
 module.exports = router;
