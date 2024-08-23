@@ -9,6 +9,7 @@ const topicRoute = require("./topic.route");
 const topicCategoryRoute = require("./topicCategory.route");
 const EICRoute = require("./exchangeItemsCategories.route");
 const exchangeItemsRoute = require("./exchangeItems.route");
+const purchaseRoute = require("./purchases.route");
 
 module.exports = [
   authRoute,
@@ -22,4 +23,5 @@ module.exports = [
   topicCategoryRoute,
   EICRoute,
   exchangeItemsRoute,
+  purchaseRoute,
 ];
