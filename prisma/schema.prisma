@@ -14,20 +14,20 @@ enum TaskStatus {
 }
 
 model Users {
-  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  fullname      String
-  email         String          @unique
-  username      String          @unique
-  profileImage  String?
-  password      String
-  isAdmin       Boolean         @default(false)
-  totalCoins    Int             @default(0)
-  referralCode  String          @unique
-  points        Int             @default(0)
-  level         Int             @default(1)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  deletedAt     DateTime?
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fullname           String
+  email              String               @unique
+  username           String               @unique
+  profileImage       String?
+  password           String
+  isAdmin            Boolean              @default(false)
+  totalCoins         Int                  @default(0)
+  referralCode       String               @unique
+  points             Int                  @default(0)
+  level              Int                  @default(1)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  deletedAt          DateTime?
   userReadingTasks   UserReadingTasks[]
   userQuizTasks      UserQuizTasks[]
   userTrueFalseTasks UserTrueFalseTasks[]
@@ -72,16 +72,16 @@ model Topics {
 }
 
 model ReadingTasks {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title       String
-  description String?
-  content     String
-  timeLimit   Int
-  rewardCoins Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now())
-  topicId     String   @db.Uuid
-  topic       Topics   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title            String
+  description      String?
+  content          String
+  timeLimit        Int
+  rewardCoins      Int
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @default(now())
+  topicId          String             @db.Uuid
+  topic            Topics             @relation(fields: [topicId], references: [id], onDelete: Cascade)
   userReadingTasks UserReadingTasks[]
 
   @@index([title])
@@ -92,17 +92,17 @@ model ReadingTasks {
 }
 
 model QuizTasks {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title          String
   description    String?
   rewardCoins    Int
   questions      Json[]
   correctAnswers Int[]
   timeLimit      Int
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @default(now())
-  topicId        String   @db.Uuid
-  topic          Topics   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @default(now())
+  topicId        String          @db.Uuid
+  topic          Topics          @relation(fields: [topicId], references: [id], onDelete: Cascade)
   userQuizTasks  UserQuizTasks[]
 
   @@index([title])
@@ -113,16 +113,16 @@ model QuizTasks {
 }
 
 model VideoTasks {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title          String
   description    String?
   videoUrl       String
   videoDuration  Int
   rewardCoins    Int
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @default(now())
-  topicId        String   @db.Uuid
-  topic          Topics   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @default(now())
+  topicId        String           @db.Uuid
+  topic          Topics           @relation(fields: [topicId], references: [id], onDelete: Cascade)
   userVideoTasks UserVideoTasks[]
 
   @@index([title])
@@ -133,17 +133,17 @@ model VideoTasks {
 }
 
 model TrueFalseTasks {
-  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title              String
   description        String?
   questions          Json[]
   correctAnswers     Boolean[]
   rewardCoins        Int
   timeLimit          Int
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @default(now())
-  topicId            String    @db.Uuid
-  topic              Topics    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @default(now())
+  topicId            String               @db.Uuid
+  topic              Topics               @relation(fields: [topicId], references: [id], onDelete: Cascade)
   userTrueFalseTasks UserTrueFalseTasks[]
 
   @@index([title])
@@ -154,15 +154,15 @@ model TrueFalseTasks {
 }
 
 model UserReadingTasks {
-  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId           String        @db.Uuid
-  user             Users         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  readingTaskId    String        @db.Uuid
-  readingTask      ReadingTasks  @relation(fields: [readingTaskId], references: [id], onDelete: Cascade)
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String       @db.Uuid
+  user             Users        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readingTaskId    String       @db.Uuid
+  readingTask      ReadingTasks @relation(fields: [readingTaskId], references: [id], onDelete: Cascade)
   readingStatus    TaskStatus?
   readingStartTime DateTime?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
   @@index([userId])
   @@index([readingTaskId])
@@ -170,15 +170,15 @@ model UserReadingTasks {
 }
 
 model UserQuizTasks {
-  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId        String        @db.Uuid
-  user          Users         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quizTaskId    String        @db.Uuid
-  quizTask      QuizTasks     @relation(fields: [quizTaskId], references: [id], onDelete: Cascade)
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String      @db.Uuid
+  user          Users       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizTaskId    String      @db.Uuid
+  quizTask      QuizTasks   @relation(fields: [quizTaskId], references: [id], onDelete: Cascade)
   quizStatus    TaskStatus?
   quizStartTime DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   @@index([userId])
   @@index([quizTaskId])
@@ -186,15 +186,15 @@ model UserQuizTasks {
 }
 
 model UserTrueFalseTasks {
-  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId             String            @db.Uuid
-  user               Users             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  trueFalseTaskId    String            @db.Uuid
-  trueFalseTask      TrueFalseTasks    @relation(fields: [trueFalseTaskId], references: [id], onDelete: Cascade)
+  id                 String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String         @db.Uuid
+  user               Users          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trueFalseTaskId    String         @db.Uuid
+  trueFalseTask      TrueFalseTasks @relation(fields: [trueFalseTaskId], references: [id], onDelete: Cascade)
   trueFalseStatus    TaskStatus?
   trueFalseStartTime DateTime?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
   @@index([userId])
   @@index([trueFalseTaskId])
@@ -202,15 +202,15 @@ model UserTrueFalseTasks {
 }
 
 model UserVideoTasks {
-  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId        String        @db.Uuid
-  user          Users         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  videoTaskId   String        @db.Uuid
-  videoTask     VideoTasks    @relation(fields: [videoTaskId], references: [id], onDelete: Cascade)
-  videoStatus   TaskStatus?
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String      @db.Uuid
+  user           Users       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoTaskId    String      @db.Uuid
+  videoTask      VideoTasks  @relation(fields: [videoTaskId], references: [id], onDelete: Cascade)
+  videoStatus    TaskStatus?
   videoStartTime DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   @@index([userId])
   @@index([videoTaskId])
@@ -242,7 +242,7 @@ model ExchangeItemCategories {
 model ExchangeItems {
   id          String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   coinPrice   Int
-  title       String
+  title       String                 @unique
   description String
   createdAt   DateTime               @default(now())
   updatedAt   DateTime               @default(now())
