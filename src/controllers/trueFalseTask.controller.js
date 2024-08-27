@@ -235,16 +235,47 @@ const submitTFTask = async (req, res, next) => {
 
 const showTFTask = async (req, res, next) => {
   try {
-    const trueFalseTasks = await prisma.trueFalseTasks.findMany();
+    const { topicId, offset = 1, limit = 10, sortBy = 'createdAt', order = 'asc' } = req.query;
+
+    const skip = (offset - 1) * limit;
+    const take = parseInt(limit, 10);
+
+    const validSortFields = ['createdAt', 'title', 'rewardCoins'];
+
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+
+    const sortOrder = order === 'desc' ? 'desc' : 'asc';
+
+    const where = {
+      ...(topicId && { topicId }), 
+    };
+
+    const trueFalseTasks = await prisma.trueFalseTasks.findMany({
+      where,
+      skip,
+      take,
+      orderBy: {
+        [sortField]: sortOrder, 
+      },
+    });
+
+    const totalTrueFalseTasks = await prisma.trueFalseTasks.count({ where });
 
     return res.status(200).json({
       message: "True/False tasks found",
       data: trueFalseTasks,
+      pagination: {
+        total: totalTrueFalseTasks,
+        offset: parseInt(offset, 10),
+        limit: take,
+        totalPages: Math.ceil(totalTrueFalseTasks / take),
+      },
     });
   } catch (error) {
     next(error);
   }
 };
+
 
 const showTFTaskById = async (req, res, next) => {
   try {

@@ -50,7 +50,28 @@ const createVideoTask = async (req, res, next) => {
 
 const showVideoTask = async (req, res, next) => {
   try {
+    const { topicId, offset = 1, limit = 10, sortBy = 'createdAt', order = 'asc' } = req.query;
+
+    const skip = (offset - 1) * limit;
+    const take = parseInt(limit, 10);
+
+    const validSortFields = ['createdAt', 'title', 'rewardCoins', 'videoDuration'];
+
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+
+    const sortOrder = order === 'desc' ? 'desc' : 'asc';
+
+    const where = {
+      ...(topicId && { topicId }),
+    };
+
     const videoTasks = await prisma.videoTasks.findMany({
+      where,
+      skip,
+      take,
+      orderBy: {
+        [sortField]: sortOrder,
+      },
       select: {
         id: true,
         title: true,
@@ -68,11 +89,23 @@ const showVideoTask = async (req, res, next) => {
       },
     });
 
-    res.status(200).json({ message: "Video tasks found", data: videoTasks });
+    const totalVideoTasks = await prisma.videoTasks.count({ where });
+
+    res.status(200).json({
+      message: "Video tasks found",
+      data: videoTasks,
+      pagination: {
+        total: totalVideoTasks,
+        offset: parseInt(offset, 10),
+        limit: take,
+        totalPages: Math.ceil(totalVideoTasks / take),
+      },
+    });
   } catch (error) {
     next(error);
   }
 };
+
 
 const showVideoTaskById = async (req, res, next) => {
   try {

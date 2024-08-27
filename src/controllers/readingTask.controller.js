@@ -1,8 +1,6 @@
 const prisma = require("../utils/connection");
 const readingTaskValidator = require("../validators/readingTask.validator");
-const {
-  calculateAndApplyRewards,
-} = require("../utils/leveling");
+const { calculateAndApplyRewards } = require("../utils/leveling");
 
 const createReadingTask = async (req, res, next) => {
   try {
@@ -41,7 +39,28 @@ const createReadingTask = async (req, res, next) => {
 
 const showReadingTask = async (req, res, next) => {
   try {
+    const { topicId, offset = 1, limit = 10, sortBy = 'createdAt', order = 'asc' } = req.query;
+
+    const skip = (offset - 1) * limit;
+    const take = parseInt(limit, 10);
+
+    const validSortFields = ['createdAt', 'title', 'rewardCoins', 'timeLimit'];
+
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+
+    const sortOrder = order === 'desc' ? 'desc' : 'asc';
+
+    const where = {
+      ...(topicId && { topicId }),
+    };
+
     const readingTasks = await prisma.readingTasks.findMany({
+      where,
+      skip,
+      take,
+      orderBy: {
+        [sortField]: sortOrder,
+      },
       select: {
         id: true,
         title: true,
@@ -59,17 +78,24 @@ const showReadingTask = async (req, res, next) => {
       },
     });
 
-    if (readingTasks.length > 0) {
-      res
-        .status(200)
-        .json({ message: "Reading tasks found", data: readingTasks });
-    } else {
-      res.status(404).json({ message: "No reading tasks found" });
-    }
+    const totalReadingTasks = await prisma.readingTasks.count({ where });
+
+    res.status(200).json({
+      message: "Reading tasks found",
+      data: readingTasks,
+      pagination: {
+        total: totalReadingTasks,
+        offset: parseInt(offset, 10),
+        limit: take,
+        totalPages: Math.ceil(totalReadingTasks / take),
+      },
+    });
   } catch (error) {
     next(error);
   }
 };
+
+
 
 const showReadingTaskById = async (req, res, next) => {
   try {
@@ -249,7 +275,7 @@ const submitReadingTask = async (req, res, next) => {
       const rewards = await calculateAndApplyRewards(
         userId,
         readingTask.rewardCoins,
-        readingTask.rewardCoins 
+        readingTask.rewardCoins
       );
       rewardCoins = rewards.actualCoins;
       points = rewards.actualPoints;
@@ -277,7 +303,6 @@ const submitReadingTask = async (req, res, next) => {
     next(error);
   }
 };
-
 
 module.exports = {
   createReadingTask,

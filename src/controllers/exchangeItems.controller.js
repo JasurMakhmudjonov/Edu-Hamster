@@ -37,7 +37,32 @@ const createExchangeItem = async (req, res, next) => {
 
 const showExchangeItems = async (req, res, next) => {
   try {
+    const { categoryId, search, offset = 1, limit = 10, sortBy = 'title', order = 'asc' } = req.query;
+
+    const skip = (offset - 1) * limit;
+    const take = parseInt(limit, 10);
+
+    const validSortFields = ['title', 'coinPrice', 'createdAt'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'title';
+    const sortOrder = order === 'desc' ? 'desc' : 'asc';
+
+    const where = {
+      ...(categoryId && { categoryId }), 
+      ...(search && {
+        title: {
+          contains: search,
+          mode: 'insensitive',
+        },
+      }),
+    };
+
     const exchangeItems = await prisma.exchangeItems.findMany({
+      where,
+      skip,
+      take,
+      orderBy: {
+        [sortField]: sortOrder,
+      },
       select: {
         id: true,
         title: true,
@@ -51,11 +76,25 @@ const showExchangeItems = async (req, res, next) => {
         },
       },
     });
-    res.json({ message: "Exchange items found", data: exchangeItems });
+
+    const totalExchangeItems = await prisma.exchangeItems.count({ where });
+
+    res.status(200).json({
+      message: "Exchange items found",
+      data: exchangeItems,
+      pagination: {
+        total: totalExchangeItems,
+        offset: parseInt(offset, 10),
+        limit: take,
+        totalPages: Math.ceil(totalExchangeItems / take),
+      },
+    });
   } catch (error) {
     next(error);
   }
 };
+
+
 
 const showExchangeItemById = async (req, res, next) => {
   try {

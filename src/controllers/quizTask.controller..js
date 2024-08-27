@@ -252,21 +252,61 @@ const submitQuiz = async (req, res, next) => {
 
 const showQuiz = async (req, res, next) => {
   try {
-    const quizes = await prisma.quizTasks.findMany();
-    if (quizes.length > 0) {
-      return res.status(200).json({
-        message: "Quizzes found",
-        data: quizes,
-      });
-    } else {
-      return res.status(404).json({
-        message: "No quizzes found",
-      });
-    }
+    const { topicId, offset = 1, limit = 10, sortBy = 'createdAt', order = 'asc' } = req.query;
+
+    const skip = (offset - 1) * limit;
+    const take = parseInt(limit, 10);
+
+    const validSortFields = ['createdAt', 'title', 'rewardCoins', 'timeLimit'];
+
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+
+    const sortOrder = order === 'desc' ? 'desc' : 'asc';
+
+    const where = {
+      ...(topicId && { topicId }),
+    };
+
+    const quizes = await prisma.quizTasks.findMany({
+      where,
+      skip,
+      take,
+      orderBy: {
+        [sortField]: sortOrder, 
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        timeLimit: true,
+        rewardCoins: true,
+        topicId: true,
+        topic: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+    });
+
+    const totalQuizes = await prisma.quizTasks.count({ where });
+
+    res.status(200).json({
+      message: "Quizzes found",
+      data: quizes,
+      pagination: {
+        total: totalQuizes,
+        offset: parseInt(offset, 10),
+        limit: take,
+        totalPages: Math.ceil(totalQuizes / take),
+      },
+    });
   } catch (error) {
     next(error);
   }
 };
+
 
 const showQuizById = async (req, res, next) => {
   try {
