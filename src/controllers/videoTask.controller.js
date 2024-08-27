@@ -1,5 +1,6 @@
 const prisma = require("../utils/connection");
 const videoTaskValidator = require("../validators/videoTask.validator");
+const { calculateAndApplyRewards } = require("../utils/leveling");
 
 const createVideoTask = async (req, res, next) => {
   try {
@@ -241,68 +242,62 @@ const submitVideoTask = async (req, res, next) => {
       return res.status(404).json({ message: "Video task not found" });
     }
 
-    const userTask = await prisma.userVideoTasks.findFirst({
+    const userVideoTask = await prisma.userVideoTasks.findFirst({
       where: {
         userId: userId,
         videoTaskId: videoTask.id,
       },
     });
 
-    if (!userTask) {
+    if (!userVideoTask) {
       return res.status(404).json({ message: "User task not found" });
     }
 
     const endTime = new Date();
-    const timeTaken = (endTime - new Date(userTask.videoStartTime)) / 60000;
-
-    let videoStatus;
-    let rewardCoins = 0;
+    const timeTaken =
+      (endTime - new Date(userVideoTask.videoStartTime)) / 60000;
 
     const allowedTime = videoTask.videoDuration / 2;
 
-    if (timeTaken < allowedTime) {
-      videoStatus = "FAILED";
-    } else {
+    let videoStatus = "FAILED";
+    let rewardCoins = 0;
+    let points = 0;
+    let newLevel = userVideoTask.level;
+
+    if (timeTaken >= allowedTime) {
       videoStatus = "ACCEPTED";
-    }
-
-    if (videoStatus === "ACCEPTED" && userTask.videoStatus === "PENDING") {
-      rewardCoins = videoTask.rewardCoins;
-
-      await prisma.users.update({
-        where: { id: userId },
-        data: {
-          totalCoins: {
-            increment: rewardCoins,
-          },
-        },
-      });
+      const rewards = await calculateAndApplyRewards(
+        userId,
+        videoTask.rewardCoins,
+        videoTask.rewardCoins
+      );
+      rewardCoins = rewards.actualCoins;
+      points = rewards.actualPoints;
+      newLevel = rewards.newLevel;
     }
 
     await prisma.userVideoTasks.update({
-      where: { id: userTask.id },
+      where: { id: userVideoTask.id },
       data: {
         videoStatus,
-        videoStartTime: endTime,
+        videoStartTime: endTime, // Consider changing this to `videoEndTime` or similar to better represent what this field is for
       },
     });
 
-    const data = {
-      rewardCoins:
-        videoStatus === "ACCEPTED" && userTask.videoStatus === "PENDING"
-          ? rewardCoins
-          : 0,
-      videoStatus,
-    };
-
     res.status(200).json({
       message: "Video task submitted successfully",
-      data,
+      data: {
+        rewardCoins: rewardCoins,
+        points: points,
+        newLevel: newLevel,
+        videoStatus: videoStatus,
+      },
     });
   } catch (error) {
     next(error);
   }
 };
+
 
 module.exports = {
   createVideoTask,

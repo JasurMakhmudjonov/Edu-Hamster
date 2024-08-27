@@ -95,9 +95,7 @@ const addToTotalCoins = async (req, res, next) => {
     const userId = req.user.id;
     const { rewardCoins } = req.body;
 
-    if (!rewardCoins || typeof rewardCoins !== "number" || rewardCoins <= 0) {
-      return res.status(400).json({ message: "Invalid rewardCoins value." });
-    }
+    
 
     await prisma.users.update({
       where: { id: userId },

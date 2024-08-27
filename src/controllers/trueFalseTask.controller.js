@@ -1,5 +1,6 @@
 const prisma = require("../utils/connection");
 const trueFalseTaskValidator = require("../validators/trueFalseTask.validator");
+const { calculateAndApplyRewards } = require("../utils/leveling");
 
 const createTFTask = async (req, res, next) => {
   try {
@@ -171,32 +172,15 @@ const submitTFTask = async (req, res, next) => {
       return res.status(404).json({ message: "True/False task not found" });
     }
 
-    const userTFTask = await prisma.userTrueFalseTasks.findFirst({
+    const userTrueFalseTask = await prisma.userTrueFalseTasks.findFirst({
       where: {
         userId: userId,
         trueFalseTaskId: trueFalseTask.id,
       },
     });
 
-    if (!userTFTask) {
+    if (!userTrueFalseTask) {
       return res.status(404).json({ message: "User task not found" });
-    }
-
-    const endTime = new Date();
-    const timeTaken =
-      (endTime - new Date(userTFTask.trueFalseStartTime)) / 60000;
-
-    if (timeTaken > trueFalseTask.timeLimit) {
-      await prisma.userTrueFalseTasks.update({
-        where: { id: userTFTask.id },
-        data: {
-          trueFalseStatus: "FAILED",
-          updatedAt: endTime,
-        },
-      });
-      return res
-        .status(400)
-        .json({ message: "Time limit exceeded. True/False task failed." });
     }
 
     const correctAnswers = trueFalseTask.correctAnswers;
@@ -210,53 +194,44 @@ const submitTFTask = async (req, res, next) => {
 
     const percentageCorrect = (score * 100) / correctAnswers.length;
     const trueFalseStatus = percentageCorrect >= 60 ? "ACCEPTED" : "FAILED";
+
     let rewardCoins = 0;
+    let points = 0;
+    let newLevel = userTrueFalseTask.level;
 
-    if (
-      trueFalseStatus === "ACCEPTED" &&
-      userTFTask.trueFalseStatus === "PENDING"
-    ) {
-      rewardCoins = trueFalseTask.rewardCoins;
-
-      await prisma.users.update({
-        where: { id: userId },
-        data: {
-          totalCoins: {
-            increment: rewardCoins,
-          },
-        },
-      });
+    if (trueFalseStatus === "ACCEPTED" && userTrueFalseTask.trueFalseStatus === "PENDING") {
+      const { actualCoins, actualPoints, newLevel } = await calculateAndApplyRewards(
+        userId,
+        trueFalseTask.rewardCoins,
+        trueFalseTask.rewardCoins 
+      );
+      rewardCoins = actualCoins;
+      points = actualPoints;
     }
 
     await prisma.userTrueFalseTasks.update({
-      where: {
-        id: userTFTask.id,
-      },
+      where: { id: userTrueFalseTask.id },
       data: {
-        trueFalseStatus,
-        trueFalseStartTime: endTime,
+        trueFalseStatus,  // Updated to the correct field
       },
     });
 
-    const data = {
-      score,
-      totalQuestions: correctAnswers.length,
-      rewardCoins:
-        trueFalseStatus === "ACCEPTED" &&
-        userTFTask.trueFalseStatus === "PENDING"
-          ? rewardCoins
-          : 0,
-      trueFalseStatus,
-    };
-
     res.status(200).json({
       message: "True/False task submitted successfully",
-      data: data,
+      data: {
+        rewardCoins: rewardCoins,
+        points: points,
+        newLevel,
+        trueFalseStatus,
+      },
     });
   } catch (error) {
     next(error);
   }
 };
+
+
+
 
 const showTFTask = async (req, res, next) => {
   try {

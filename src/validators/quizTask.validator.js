@@ -17,7 +17,7 @@ const createQuizSchema = Joi.object({
     .items(Joi.number().integer().min(0).required())
     .required(),
   timeLimit: Joi.number().integer().min(1).required(),
-  topicId: Joi.string().required(),
+  topicId: Joi.string().uuid().required(),
 });
 
 const updateQuizSchema = Joi.object({

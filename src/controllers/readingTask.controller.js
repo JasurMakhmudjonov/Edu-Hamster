@@ -1,5 +1,8 @@
 const prisma = require("../utils/connection");
 const readingTaskValidator = require("../validators/readingTask.validator");
+const {
+  calculateAndApplyRewards,
+} = require("../utils/leveling");
 
 const createReadingTask = async (req, res, next) => {
   try {
@@ -93,7 +96,7 @@ const showReadingTaskById = async (req, res, next) => {
       return res.status(404).json({ message: "Reading task not found" });
     }
 
-    res.status(200).json({
+    res.status(400).json({
       message: "Reading task found",
       data: readingTask,
     });
@@ -224,62 +227,57 @@ const submitReadingTask = async (req, res, next) => {
       return res.status(404).json({ message: "Reading task not found" });
     }
 
-    const userTask = await prisma.userReadingTasks.findFirst({
-      where: { userId: userId, readingTaskId: readingTask.id },
+    const userReadingTask = await prisma.userReadingTasks.findFirst({
+      where: { userId, readingTaskId: readingTask.id },
     });
-    if (!userTask) {
+
+    if (!userReadingTask) {
       return res.status(404).json({ message: "User task not found" });
     }
 
     const endTime = new Date();
-    const timeTaken = (endTime - new Date(userTask.readingStartTime)) / 60000;
+    const timeTaken =
+      (endTime - new Date(userReadingTask.readingStartTime)) / 60000;
 
-    let readingStatus;
+    let readingStatus = "FAILED";
     let rewardCoins = 0;
+    let points = 0;
+    let newLevel = userReadingTask.level;
 
-    if (timeTaken < readingTask.timeLimit) {
-      readingStatus = "FAILED";
-    } else {
+    if (timeTaken >= readingTask.timeLimit) {
       readingStatus = "ACCEPTED";
-    }
-
-    if (readingStatus === "ACCEPTED" && userTask.readingStatus === "PENDING") {
-      rewardCoins = readingTask.rewardCoins;
-
-      await prisma.users.update({
-        where: { id: userId },
-        data: {
-          totalCoins: {
-            increment: rewardCoins,
-          },
-        },
-      });
+      const rewards = await calculateAndApplyRewards(
+        userId,
+        readingTask.rewardCoins,
+        readingTask.rewardCoins 
+      );
+      rewardCoins = rewards.actualCoins;
+      points = rewards.actualPoints;
+      newLevel = rewards.newLevel;
     }
 
     await prisma.userReadingTasks.update({
-      where: { id: userTask.id },
+      where: { id: userReadingTask.id },
       data: {
         readingStatus,
         readingStartTime: endTime,
       },
     });
 
-    const data = {
-      rewardCoins:
-        readingStatus === "ACCEPTED" && userTask.readingStatus === "PENDING"
-          ? rewardCoins
-          : 0,
-      readingStatus,
-    };
-
     res.status(200).json({
       message: "Reading task submitted successfully",
-      data,
+      data: {
+        rewardCoins: rewardCoins,
+        points: points,
+        newLevel: newLevel,
+        readingStatus,
+      },
     });
   } catch (error) {
     next(error);
   }
 };
+
 
 module.exports = {
   createReadingTask,

@@ -1,4 +1,5 @@
 const prisma = require("../utils/connection");
+const { calculateAndApplyRewards } = require("../utils/leveling");
 const quizTaskValidator = require("../validators/quizTask.validator");
 
 const createQuiz = async (req, res, next) => {
@@ -23,7 +24,7 @@ const createQuiz = async (req, res, next) => {
     });
 
     if (!topic) {
-      return res.status(404).json({ error: "Topic not found" });
+      return res.status(404).json({ message: "Topic not found" });
     }
 
     const quiz = await prisma.quizTasks.create({
@@ -205,44 +206,44 @@ const submitQuiz = async (req, res, next) => {
 
     const percentageCorrect = (score * 100) / correctAnswers.length;
     const quizStatus = percentageCorrect >= 60 ? "ACCEPTED" : "FAILED";
-    let rewardCoins = 0;
 
     if (quizStatus === "ACCEPTED" && userQuizTask.quizStatus === "PENDING") {
-      rewardCoins = quiz.rewardCoins;
+      const { actualCoins, actualPoints, newLevel } =
+        await calculateAndApplyRewards(
+          userId,
+          quiz.rewardCoins,
+        );
 
-      await prisma.users.update({
-        where: { id: userId },
+      res.status(200).json({
+        message: "Quiz submitted successfully",
         data: {
-          totalCoins: {
-            increment: rewardCoins,
-          },
+          score,
+          totalQuestions: correctAnswers.length,
+          rewardCoins: actualCoins,
+          points: actualPoints,
+          newLevel,
+          quizStatus,
+        },
+      });
+    } else {
+      res.status(200).json({
+        message: "Quiz submitted successfully",
+        data: {
+          score,
+          totalQuestions: correctAnswers.length,
+          rewardCoins: 0,
+          points: 0,
+          quizStatus,
         },
       });
     }
 
     await prisma.userQuizTasks.update({
-      where: {
-        id: userQuizTask.id,
-      },
+      where: { id: userQuizTask.id },
       data: {
         quizStatus,
         quizStartTime: endTime,
       },
-    });
-
-    const data = {
-      score,
-      totalQuestions: correctAnswers.length,
-      rewardCoins:
-        quizStatus === "ACCEPTED" && userQuizTask.quizStatus === "PENDING"
-          ? rewardCoins
-          : 0,
-      quizStatus,
-    };
-
-    res.status(200).json({
-      message: "Quiz submitted successfully",
-      data: data,
     });
   } catch (error) {
     next(error);
