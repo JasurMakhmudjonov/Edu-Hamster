@@ -6,6 +6,7 @@ const {
   updateByUser,
   updateByAdmin,
   getUserByIdByAdmin,
+  tapToEarnCoins,
 } = require("../controllers/user.controller");
 const { isAdmin } = require("../middlewares/is-admin.middleware");
 const { isAuth } = require("../middlewares/is-auth.middleware");
@@ -15,6 +16,7 @@ const route = "/users";
 
 router.get(`${route}/`, isAdmin, getAllUsers);
 router.get(`/user`, isAuth, getUserById);
+router.post(`/user/tap`, isAuth, tapToEarnCoins);
 router.get(`/admin${route}/:id`, isAdmin, getUserByIdByAdmin);
 router.put(`${route}/:id`, isAuth, updateByUser);
 router.put(`/admin${route}/:id`, isAuth, updateByAdmin);

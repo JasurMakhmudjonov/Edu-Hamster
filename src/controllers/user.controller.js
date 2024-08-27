@@ -202,6 +202,37 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
+const tapToEarnCoins = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await prisma.users.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const coinsPerTap = user.level;
+
+    const updatedUser = await prisma.users.update({
+      where: { id: userId },
+      data: {
+        totalCoins: {
+          increment: coinsPerTap,
+        },
+      },
+    });
+
+    res.status(200).json({
+      message: `Tap successful. You earned ${coinsPerTap} coins.`,
+      data: {
+        totalCoins: updatedUser.totalCoins,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -209,4 +240,5 @@ module.exports = {
   getUserByIdByAdmin,
   updateByAdmin,
   deleteUser,
+  tapToEarnCoins,
 };
