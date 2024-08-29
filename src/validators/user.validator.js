@@ -19,4 +19,8 @@ const updateUserSchemaByAdmin = Joi.object({
   isAdmin: Joi.boolean(),
 });
 
-module.exports = { updateUserSchema, updateUserSchemaByAdmin };
+const tapCountSchema = Joi.object({
+  tapCount: Joi.number().required(),
+});
+
+module.exports = { updateUserSchema, updateUserSchemaByAdmin, tapCountSchema };

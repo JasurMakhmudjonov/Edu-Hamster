@@ -2,6 +2,7 @@ const prisma = require("../utils/connection");
 const userValidator = require("../validators/user.validator");
 const path = require("path");
 const { v4: uuid } = require("uuid");
+const bcrypt = require("bcrypt");
 
 const getAllUsers = async (req, res, next) => {
   try {
@@ -72,7 +73,7 @@ const updateByUser = async (req, res, next) => {
     let imageName = undefined;
     if (req.files && req.files.profileImage) {
       const file = req.files.profileImage;
-      const allowedExtensions = [".png", ".jpg", ".jpeg", ,];
+      const allowedExtensions = [".png", ".jpg", ".jpeg"];
       const extension = path.extname(file.name);
 
       if (!allowedExtensions.includes(extension)) {
@@ -126,9 +127,7 @@ const updateByAdmin = async (req, res, next) => {
       isAdmin,
     } = req.body;
 
-    const { error } = userValidator.updateUserSchemaByAdmin.validate(
-      req.body
-    );
+    const { error } = userValidator.updateUserSchemaByAdmin.validate(req.body);
     if (error) {
       return res.status(400).json({ error: error.message });
     }
@@ -205,6 +204,16 @@ const deleteUser = async (req, res, next) => {
 const tapToEarnCoins = async (req, res, next) => {
   try {
     const userId = req.user.id;
+    const { tapCount } = req.body;
+
+    const { error } = userValidator.tapCountSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    if (tapCount <= 0) {
+      return res.status(400).json({ message: "Tap count must be a positive integer." });
+    }
 
     const user = await prisma.users.findUnique({ where: { id: userId } });
     if (!user) {
@@ -212,18 +221,19 @@ const tapToEarnCoins = async (req, res, next) => {
     }
 
     const coinsPerTap = user.level;
+    const totalEarnedCoins = coinsPerTap * tapCount;
 
     const updatedUser = await prisma.users.update({
       where: { id: userId },
       data: {
         totalCoins: {
-          increment: coinsPerTap,
+          increment: totalEarnedCoins,
         },
       },
     });
 
     res.status(200).json({
-      message: `Tap successful. You earned ${coinsPerTap} coins.`,
+      message: `Tap successful. You earned ${totalEarnedCoins} coins.`,
       data: {
         totalCoins: updatedUser.totalCoins,
       },
@@ -236,8 +246,8 @@ const tapToEarnCoins = async (req, res, next) => {
 module.exports = {
   getAllUsers,
   getUserById,
-  updateByUser,
   getUserByIdByAdmin,
+  updateByUser,
   updateByAdmin,
   deleteUser,
   tapToEarnCoins,

@@ -278,6 +278,8 @@ const showQuiz = async (req, res, next) => {
         id: true,
         title: true,
         description: true,
+        questions: true,
+        correctAnswers: true,
         timeLimit: true,
         rewardCoins: true,
         topicId: true,
@@ -306,7 +308,6 @@ const showQuiz = async (req, res, next) => {
     next(error);
   }
 };
-
 
 const showQuizById = async (req, res, next) => {
   try {
